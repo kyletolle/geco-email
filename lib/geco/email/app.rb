@@ -1,9 +1,9 @@
 require 'sinatra/base'
 require 'fulcrum'
-require 'twilio-ruby'
+require 'pony'
 
 class Geco
-  class Sms
+  class Email
     class App < Sinatra::Base
       require 'json'
 
@@ -32,9 +32,9 @@ class Geco
 
         record_id = payload['data']['id']
 
-        phone_numbers.each do |number|
-          next if number.blank?
-          send_text(number, "New GeCo 2014 Happening: #{url_to_send(record_id)}")
+        emails.each do |email|
+          next if email.blank?
+          send_email(email, "New GeCo 2014 Happening: #{url_to_send(record_id)}")
         end
 
         "Success"
@@ -46,15 +46,15 @@ class Geco
       end
 
       def api_key
-        ENV['SMS_FULCRUM_API_KEY']
+        ENV['EMAIL_FULCRUM_API_KEY']
       end
 
       def expected_form_id
-        ENV['SMS_FULCRUM_FORM_ID']
+        ENV['EMAIL_FULCRUM_FORM_ID']
       end
 
       def alert_form_id
-        ENV['SMS_FULCRUM_ALERTS_FORM_ID']
+        ENV['EMAIL_FULCRUM_ALERTS_FORM_ID']
       end
 
       def url_to_send(record_id)
@@ -65,39 +65,35 @@ class Geco
         'http://geco.herokuapp.com/?record_id='
       end
 
-      def phone_numbers
-        records_of_people_to_alert.map{|r| r['form_values'][phone_number_field_key]}
+      def emails
+        records_of_people_to_alert.map{|r| r['form_values'][email_field_key]}
       end
 
-      def phone_number_field_key
-        ENV['SMS_FULCRUM_PHONE_NUMBER_FIELD_KEY']
+      def email_field_key
+        ENV['EMAIL_FULCRUM_EMAIL_FIELD_KEY']
       end
 
       def records_of_people_to_alert
         api.records.all(form_id: alert_form_id).objects
       end
 
-      def twilio_sid
-        ENV['SMS_TWILIO_SID']
-      end
-
-      def twilio_token
-        ENV['SMS_TWILIO_TOKEN']
-      end
-
-      def twilio_number
-        ENV['SMS_TWILIO_NUMBER']
-      end
-
-      def send_text(number, message)
-        @twilio_client ||=
-          Twilio::REST::Client.new(twilio_sid, twilio_token)
-
-        @twilio_client.account.messages.create(
-          from: twilio_number,
-          to:   number,
-          body: message
-        )
+      def send_email(email, message)
+        Pony.mail({
+          to:  email,
+          subject: "[Alert] New GeCo in the Rockies 2014 Happening!",
+          body: message,
+          from: 'kyle@sni.io',
+          via: :smtp,
+          via_options: {
+            address: 'smtp.sendgrid.net',
+            port: '587',
+            domain: 'heroku.com',
+            user_name: ENV['SENDGRID_USERNAME'],
+            password: ENV['SENDGRID_PASSWORD'],
+            authentication: :plain,
+            enable_starttls_auto: true
+          }
+        })
       end
 
       run! if app_file == $0
