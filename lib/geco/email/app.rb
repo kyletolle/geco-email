@@ -32,10 +32,15 @@ class Geco
 
         record_id = payload['data']['id']
 
+        $stdout.sync = true
+        puts "SHOULD BE SENDING EMAILS"
         emails.each do |email|
           next if email.blank?
+          puts "SENDING EMAIL TO #{email}"
           send_email(email, "New GeCo 2014 Happening: #{url_to_send(record_id)}")
+          puts "SHOULD HAVE SENT EMAIL"
         end
+        puts "DONE SENDING EMAILS"
 
         "Success"
       end
