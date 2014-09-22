@@ -78,22 +78,30 @@ class Geco
       end
 
       def send_email(email, message)
-        Pony.mail({
-          to:  email,
-          subject: "[Alert] New GeCo in the Rockies 2014 Happening!",
-          body: message,
-          from: 'kyle@sni.io',
-          via: :smtp,
-          via_options: {
-            address: 'smtp.sendgrid.net',
-            port: '587',
-            domain: 'heroku.com',
-            user_name: ENV['SENDGRID_USERNAME'],
-            password: ENV['SENDGRID_PASSWORD'],
-            authentication: :plain,
-            enable_starttls_auto: true
-          }
-        })
+        begin
+          Pony.mail({
+            to:  email,
+            subject: "[Alert] New GeCo in the Rockies 2014 Happening!",
+            body: message,
+            from: 'kyle@sni.io',
+            via: :smtp,
+            via_options: {
+              address: 'smtp.sendgrid.net',
+              port: '587',
+              domain: 'heroku.com',
+              user_name: ENV['SENDGRID_USERNAME'],
+              password: ENV['SENDGRID_PASSWORD'],
+              authentication: :plain,
+              enable_starttls_auto: true
+            }
+          })
+
+        rescue StandardError => e
+          $stderr.puts "Error: Couldn't send email to #{email}..."
+          $stderr.puts "Details: #{e.inspect}"
+          $stderr.puts "Backtrace:"
+          $stderr.puts e.backtrace.join("\n")
+        end
       end
 
       run! if app_file == $0
